@@ -5,6 +5,8 @@ import numpy as np
 import csv
 from datetime import datetime
 import logging
+import multiprocessing.dummy as mp
+
 
 
 # Artist, Album, Name, Date
@@ -53,21 +55,66 @@ logging.info("Reading CSV")
 csvstuff = read_csv(filename)
 logging.info("Converting to cum")
 cum = get_dates_cum(csvstuff)
+cum_sorted = sorted(cum)
 
+amount_of_artists = len(cum[cum_sorted[-1]])
 
-x = []
-y = []
+#x = np.empty(0, datetime)
+#y = np.empty(0, dict)
 
 logging.info("Doing append stuff")
-for date in sorted(cum):
-    x.append(date)
+#for date in sorted(cum):
+#    x = np.append(x, date)
+#
+#    y = np.append(y, cum[date])
 
-    y.append(cum[date])
+x = np.array(cum_sorted, datetime)
+y = np.fromiter(
+    map(
+        lambda date: cum[date],
+        cum_sorted
+    ),
+    dict,
+    len(cum_sorted)
+)
 
 logging.info("Plotting the actual stuff")
-for artist in y[-1]:
-    l = list(map(lambda t: t[artist] if artist in t else 0, y))
-    plt.plot(x, l, label=artist, mouseover=True)
+
+#y_axes = np.empty((len(y[-1]), len(x)), int)
+#y_axes = []
 
 
+y_axes = np.fromiter(
+    map(
+        lambda artist: (
+            np.fromiter(
+                map(
+                    lambda time: time[artist] if artist in time else 0,
+                    y
+                ),
+                int,
+                len(y)
+            )
+        ),
+        y[-1]
+    ),
+    np.ndarray,
+    len(y[-1])
+)
+
+y_axes = np.stack(y_axes)
+
+#i = 0
+#for artist in y[-1]:
+#    axis = map(lambda t: t[artist] if artist in t else 0, y)
+#    y_axes[i] = np.fromiter(map(lambda t: t[artist] if artist in t else 0, y), int, count=len(y))
+#    i += 1
+#    #plt.plot(x, l, label=artist, mouseover=True)
+
+logging.info("Turning it into an array")
+
+y_axes = np.array(y_axes)
+y_axes = y_axes.transpose()
+plt.plot(x, y_axes)
+plt.ioff()
 plt.show()
